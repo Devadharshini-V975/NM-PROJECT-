@@ -1,0 +1,51 @@
+import boto3
+import json
+from botocore.exceptions import ClientError
+
+dynamodb = boto3.resource('dynamodb')
+sns = boto3.client('sns')
+table = dynamodb.Table('BloodInventory')
+
+def lambda_handler(event, context):
+    action = event.get('action')
+    blood_group = event.get('blood_group')
+    quantity = event.get('quantity', 0)
+    
+    if not blood_group or not action:
+        return {"statusCode": 400, "body": "Invalid request"}
+    
+    try:
+        if action == "add":
+            table.update_item(
+                Key={'BloodGroup': blood_group},
+                UpdateExpression="ADD Quantity :val",
+                ExpressionAttributeValues={':val': quantity},
+                ReturnValues="UPDATED_NEW"
+            )
+            return {"statusCode": 200, "body": f"{quantity} units added to {blood_group}."}
+        
+        elif action == "request":
+            response = table.get_item(Key={'BloodGroup': blood_group})
+            current_quantity = response.get('Item', {}).get('Quantity', 0)
+            
+            if current_quantity >= quantity:
+                table.update_item(
+                    Key={'BloodGroup': blood_group},
+                    UpdateExpression="ADD Quantity :val",
+                    ExpressionAttributeValues={':val': -quantity},
+                    ReturnValues="UPDATED_NEW"
+                )
+                return {"statusCode": 200, "body": f"{quantity} units of {blood_group} dispatched."}
+            else:
+                # Notify donors via SNS
+                sns.publish(
+                    TopicArn='arn:aws:sns:region:account-id:BloodAlerts',
+                    Message=f"Urgent need for {blood_group} blood. Please donate!",
+                )
+                return {"statusCode": 200, "body": f"Insufficient {blood_group}. Notification sent to donors."}
+        
+        else:
+            return {"statusCode": 400, "body": "Invalid action."}
+    
+    except ClientError as e:
+        return {"statusCode": 500, "body": str(e)}
