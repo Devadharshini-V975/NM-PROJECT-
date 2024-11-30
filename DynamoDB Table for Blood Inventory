@@ -1,0 +1,5 @@
+aws dynamodb create-table \
+    --table-name BloodInventory \
+    --attribute-definitions AttributeName=BloodGroup,AttributeType=S \
+    --key-schema AttributeName=BloodGroup,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
