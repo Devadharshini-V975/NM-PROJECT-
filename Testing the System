@@ -1,0 +1,11 @@
+Add blood
+
+curl -X POST https://<API-Gateway-URL>/blood \
+     -H "Content-Type: application/json" \
+     -d '{"action": "add", "blood_group": "A+", "quantity": 10}'
+
+Request blood
+
+curl -X POST https://<API-Gateway-URL>/blood \
+     -H "Content-Type: application/json" \
+     -d '{"action": "request", "blood_group": "A+", "quantity": 5}'
