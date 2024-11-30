@@ -1,0 +1,6 @@
+aws sns create-topic --name BloodAlerts
+
+aws sns subscribe \
+    --topic-arn arn:aws:sns:region:account-id:BloodAlerts \
+    --protocol email \
+    --notification-endpoint donor@example.com
